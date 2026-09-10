@@ -22,8 +22,8 @@ services:
       - --default-time-zone=+08:00
       - --max_connections=200
       - --innodb_buffer_pool_size=512M
-    ports:
-      - "13306:3306"
+    expose:
+      - "3306"
     volumes:
       - mysql-data:/var/lib/mysql
       # 首次启动时自动初始化 schema（务必先放好合并后的单库 SQL 文件）
@@ -49,8 +49,8 @@ services:
       - 256mb
       - --maxmemory-policy
       - allkeys-lru
-    ports:
-      - "16379:6379"
+    expose:
+      - "6379"
     volumes:
       - redis-data:/data
     healthcheck:
@@ -70,8 +70,8 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
       TZ: Asia/Shanghai
-    ports:
-      - "15432:5432"
+    expose:
+      - "5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -97,8 +97,8 @@ services:
     volumes:
       # 覆盖镜像内置的兜底配置（必须挂载，否则用不到生产数据库地址）
       - ./configs/xiaozhi-server-go/config.yaml:/app/configs/config.yaml:ro
-    ports:
-      - "8080:8080"
+    expose:
+      - "8080"
 
   xiaozhi-server-admin:
     image: ${ALIYUN_ACR_REGISTRY}/${ALIYUN_ACR_NAMESPACE}/xiaozhi-server-admin:latest
@@ -109,8 +109,8 @@ services:
     dns:
       - 127.0.0.11
       - 223.5.5.5
-    ports:
-      - "8082:80"
+    expose:
+      - "80"
 
   ykt-admin-go:
     image: ${ALIYUN_ACR_REGISTRY}/${ALIYUN_ACR_NAMESPACE}/ykt-admin-go:latest
@@ -126,8 +126,8 @@ services:
       TZ: Asia/Shanghai
     volumes:
       - ./configs/ykt-admin-go/config.yaml:/app/configs/config.yaml:ro
-    ports:
-      - "8090:8090"
+    expose:
+      - "8090"
 
   ykt-admin-console:
     image: ${ALIYUN_ACR_REGISTRY}/${ALIYUN_ACR_NAMESPACE}/ykt-admin-console:latest
@@ -138,8 +138,8 @@ services:
     dns:
       - 127.0.0.11
       - 223.5.5.5
-    ports:
-      - "8083:80"
+    expose:
+      - "80"
 
   ykt-aisaas:
     image: ${ALIYUN_ACR_REGISTRY}/${ALIYUN_ACR_NAMESPACE}/ykt-aisaas:latest
@@ -163,8 +163,8 @@ services:
     volumes:
       - ./configs/ykt-aisaas/config.yaml:/app/config.yaml:ro
       - ./keys/aisaas:/app/keys:ro
-    ports:
-      - "8190:8190"
+    expose:
+      - "8190"
 
   ykt-aisaas-portal:
     image: ${ALIYUN_ACR_REGISTRY}/${ALIYUN_ACR_NAMESPACE}/ykt-aisaas-portal:latest
@@ -175,8 +175,8 @@ services:
     dns:
       - 127.0.0.11
       - 223.5.5.5
-    ports:
-      - "8191:80"
+    expose:
+      - "80"
 
   # muliti-toy 是统一入口，把 /api/v1 转给 ykt-aisaas、/api 转给 ykt-admin-go
   muliti-toy:
@@ -189,8 +189,27 @@ services:
     dns:
       - 127.0.0.11
       - 223.5.5.5
+    expose:
+      - "80"
+
+  # edge nginx：唯一对外端口 8088，把所有路径转给内部各服务
+  edge-nginx:
+    image: nginx:alpine
+    container_name: ykt-edge-nginx
+    restart: unless-stopped
+    depends_on:
+      - muliti-toy
+      - xiaozhi-server
+      - ykt-admin-console
+      - ykt-aisaas-portal
+      - xiaozhi-server-admin
+    dns:
+      - 127.0.0.11
+      - 223.5.5.5
+    volumes:
+      - ./nginx/edge.conf:/etc/nginx/conf.d/default.conf:ro
     ports:
-      - "80:80"
+      - "8088:8088"
 
 volumes:
   mysql-data:
