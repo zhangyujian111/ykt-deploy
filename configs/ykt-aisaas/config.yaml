@@ -1,0 +1,55 @@
+# ykt-aisaas — 生产配置
+#
+# 部署：
+#   docker-compose 会把此文件挂载到 /app/config.yaml:ro
+
+server:
+  port: 8190
+  internalToken: "${AISAAS_INTERNAL_TOKEN}"  # 占位，deploy.sh 渲染时替换
+
+# 单库：业务表统一在 ykt 库
+mysql:
+  dsn: "root:${MYSQL_ROOT_PASSWORD}@tcp(ykt-mysql:3306)/ykt?charset=utf8mb4&parseTime=true&loc=Local"
+  maxOpenConns: 40
+  maxIdleConns: 10
+  connMaxLifeSec: 3600
+
+# RAG 向量检索（docker-compose 默认启用）
+postgres:
+  dsn: "postgres://postgres:${POSTGRES_PASSWORD}@ykt-postgres:5432/${POSTGRES_DB}?sslmode=disable"
+  maxConns: 8
+
+redis:
+  addr: "ykt-redis:6379"
+  password: "${REDIS_PASSWORD}"
+  db: 0
+
+# AES 密钥（32 字节），生产必须随机生成；deploy.sh 会替换
+crypto:
+  aesKey: "${AISAAS_AES_KEY}"
+
+tenant:
+  skipTables:
+    - ykt_aisaas_tenant
+    - ykt_aisaas_plan
+    - ykt_aisaas_dict_type
+    - ykt_aisaas_dict_item
+    - ykt_aisaas_admin_user
+    - ykt_aisaas_admin_role
+    - ykt_aisaas_balance
+    - ykt_aisaas_balance_transaction
+    - ykt_aisaas_internal_tenant_config
+    - ykt_aisaas_model_registry
+    - ykt_aisaas_user
+    - ykt_aisaas_user_device
+    - ykt_aisaas_recharge_order
+
+quota:
+  precheck: true
+
+metering:
+  batchSize: 200
+  flushSec: 3
+
+log:
+  level: info

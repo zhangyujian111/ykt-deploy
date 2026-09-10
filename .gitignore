@@ -1,0 +1,8 @@
+.env
+configs/*/*.rendered.yaml
+migrations/init/
+*.log
+logs/
+.idea/
+.vscode/
+.DS_Store

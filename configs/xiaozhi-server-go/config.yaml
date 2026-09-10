@@ -1,0 +1,83 @@
+# xiaozhi-server-go — 生产配置
+#
+# 部署：
+#   docker-compose 会把此文件挂载到 /app/configs/config.yaml:ro
+
+server:
+  host: "0.0.0.0"
+  port: 8080
+  read_timeout: 30s
+  write_timeout: 30s
+  max_header_bytes: 1048576
+
+websocket:
+  read_buffer_size: 4096
+  write_buffer_size: 4096
+  max_message_size: 65536
+  ping_interval: 30s
+  pong_wait: 60s
+  write_wait: 10s
+  max_connections: 1000
+  handshake_timeout: 10s
+
+# 调用同网络内的 ykt-aisaas 后端
+aisaas:
+  url: "http://ykt-aisaas:8190"
+  internal_token: "${XZ_AISAAS_INTERNAL_TOKEN}"  # 占位，deploy.sh 渲染时替换
+  timeout: 30s
+  max_retries: 3
+  retry_backoff: 1s
+
+device:
+  encrypted_key_file: "configs/device.key.enc"
+  key_rotate_interval: 24h
+  key_rotate_requests: 10000
+
+redis:
+  addr: "ykt-redis:6379"
+  password: "${REDIS_PASSWORD}"  # 占位，deploy.sh 渲染时替换
+  db: 0
+  pool_size: 50
+  min_idle_conns: 5
+  dial_timeout: 5s
+  read_timeout: 3s
+  write_timeout: 3s
+  pool_timeout: 4s
+  max_retries: 3
+
+# 单库：所有业务表统一在 ykt 库（由 mysql 服务提供，docker 网络内主机名为 ykt-mysql）
+mysql:
+  host: "ykt-mysql"
+  port: 3306
+  user: "root"
+  password: "${MYSQL_ROOT_PASSWORD}"  # 占位
+  database: "ykt"
+  charset: "utf8mb4"
+  max_open_conns: 50
+  max_idle_conns: 10
+  conn_max_lifetime: 3600s
+  conn_max_idle_time: 600s
+  log_level: "warn"
+
+log:
+  level: "info"
+  format: "json"
+  output: "stdout"
+  file_path: "logs/xiaozhi-server-go.log"
+  max_size: 100
+  max_backups: 7
+  max_age: 30
+  compress: true
+
+observability:
+  service_name: "xiaozhi-server-go"
+  service_version: "0.1.0"
+  metrics:
+    enabled: true
+    port: 9090
+    path: "/metrics"
+  tracing:
+    enabled: false
+
+mqtt:
+  enabled: false

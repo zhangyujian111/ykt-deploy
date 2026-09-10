@@ -1,0 +1,30 @@
+# ykt-admin-go — 生产配置
+#
+# 部署：
+#   docker-compose 会把此文件挂载到 /app/configs/config.yaml:ro
+
+server:
+  port: 8090
+  mode: release
+
+# 单库：所有业务表（ykt_sys_* / ykt_alert_* / ykt_event_* / sys_* / ykt_aisaas_*）
+# 统一落在 ykt 库（由 mysql 服务提供，docker 网络内主机名为 ykt-mysql）
+mysql:
+  dsn: "root:${MYSQL_ROOT_PASSWORD}@tcp(ykt-mysql:3306)/ykt?charset=utf8mb4&parseTime=true&loc=Local&multiStatements=true"
+  maxOpenConns: 40
+  maxIdleConns: 10
+  connMaxLifeMin: 30
+
+redis:
+  addr: "ykt-redis:6379"
+  db: 0
+  # 注：当前 ykt-admin-go 的 Config.Redis 结构体未读取密码字段（main.go:29），
+  # 若需要密码登录需要先在 main.go 加 Password 字段。
+
+jwt:
+  secret: "${YKT_ADMIN_JWT_SECRET}"  # 占位，deploy.sh 渲染时替换
+  issuer: "ykt-admin"
+  ttlMin: 1440
+
+log:
+  level: info
