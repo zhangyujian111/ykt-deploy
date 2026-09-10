@@ -7,10 +7,14 @@
 services:
   mysql:
     image: mysql:8.0
+    dns:
+      - 127.0.0.11
+      - 223.5.5.5
     container_name: ykt-mysql
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ykt
       TZ: Asia/Shanghai
     command:
       - --character-set-server=utf8mb4
@@ -32,6 +36,9 @@ services:
 
   redis:
     image: redis:7-alpine
+    dns:
+      - 127.0.0.11
+      - 223.5.5.5
     container_name: ykt-redis
     restart: unless-stopped
     command:
@@ -54,6 +61,9 @@ services:
 
   postgres:
     image: pgvector/pgvector:pg16
+    dns:
+      - 127.0.0.11
+      - 223.5.5.5
     container_name: ykt-postgres
     restart: unless-stopped
     environment:
@@ -79,6 +89,9 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    dns:
+      - 127.0.0.11
+      - 223.5.5.5
     environment:
       TZ: Asia/Shanghai
     volumes:
@@ -86,8 +99,6 @@ services:
       - ./configs/xiaozhi-server-go/config.yaml:/app/configs/config.yaml:ro
     ports:
       - "8080:8080"
-    networks:
-      - ykt-net
 
   xiaozhi-server-admin:
     image: ${ALIYUN_ACR_REGISTRY}/${ALIYUN_ACR_NAMESPACE}/xiaozhi-server-admin:latest
@@ -95,10 +106,11 @@ services:
     restart: unless-stopped
     depends_on:
       - xiaozhi-server
+    dns:
+      - 127.0.0.11
+      - 223.5.5.5
     ports:
       - "8082:80"
-    networks:
-      - ykt-net
 
   ykt-admin-go:
     image: ${ALIYUN_ACR_REGISTRY}/${ALIYUN_ACR_NAMESPACE}/ykt-admin-go:latest
@@ -107,14 +119,15 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+    dns:
+      - 127.0.0.11
+      - 223.5.5.5
     environment:
       TZ: Asia/Shanghai
     volumes:
       - ./configs/ykt-admin-go/config.yaml:/app/configs/config.yaml:ro
     ports:
       - "8090:8090"
-    networks:
-      - ykt-net
 
   ykt-admin-console:
     image: ${ALIYUN_ACR_REGISTRY}/${ALIYUN_ACR_NAMESPACE}/ykt-admin-console:latest
@@ -122,10 +135,11 @@ services:
     restart: unless-stopped
     depends_on:
       - ykt-admin-go
+    dns:
+      - 127.0.0.11
+      - 223.5.5.5
     ports:
       - "8083:80"
-    networks:
-      - ykt-net
 
   ykt-aisaas:
     image: ${ALIYUN_ACR_REGISTRY}/${ALIYUN_ACR_NAMESPACE}/ykt-aisaas:latest
@@ -138,6 +152,9 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
+    dns:
+      - 127.0.0.11
+      - 223.5.5.5
     environment:
       TZ: Asia/Shanghai
       LLM_API_KEY: ${LLM_API_KEY}
@@ -145,10 +162,9 @@ services:
       LLM_MODEL: ${LLM_MODEL}
     volumes:
       - ./configs/ykt-aisaas/config.yaml:/app/config.yaml:ro
+      - ./keys/aisaas:/app/keys:ro
     ports:
       - "8190:8190"
-    networks:
-      - ykt-net
 
   ykt-aisaas-portal:
     image: ${ALIYUN_ACR_REGISTRY}/${ALIYUN_ACR_NAMESPACE}/ykt-aisaas-portal:latest
@@ -156,10 +172,11 @@ services:
     restart: unless-stopped
     depends_on:
       - ykt-aisaas
+    dns:
+      - 127.0.0.11
+      - 223.5.5.5
     ports:
       - "8191:80"
-    networks:
-      - ykt-net
 
   # muliti-toy 是统一入口，把 /api/v1 转给 ykt-aisaas、/api 转给 ykt-admin-go
   muliti-toy:
@@ -169,14 +186,11 @@ services:
     depends_on:
       - ykt-admin-go
       - ykt-aisaas
+    dns:
+      - 127.0.0.11
+      - 223.5.5.5
     ports:
       - "80:80"
-    networks:
-      - ykt-net
-
-networks:
-  ykt-net:
-    driver: bridge
 
 volumes:
   mysql-data:
